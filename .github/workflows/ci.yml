@@ -19,7 +19,7 @@ jobs:
       - name: Jenkins pipeline with the static image
         id: jenkins_pipeline_image
         uses:
-          ./jfr-static-image-action
+          ./
         with:
           command: run
           jenkinsfile: Jenkinsfile
@@ -46,7 +46,7 @@ jobs:
       - name: Jenkins pipeline with the static image
         id: jenkins_pipeline_base_image
         uses:
-          ./jfr-static-image-action
+          ./
         env:
           JENKINS_AWS_KEY: 123456
         with:
