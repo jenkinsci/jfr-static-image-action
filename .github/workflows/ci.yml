@@ -1,0 +1,64 @@
+name: Jenkinsfile-runner actions CI
+on: [push]
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    name: syntax-check
+    steps:
+      - uses: actions/checkout@v2
+      - name: Run ShellCheck
+        uses: ludeeus/action-shellcheck@master      
+  jenkins-static-image-pipeline:
+    needs: syntax-check
+    runs-on: ubuntu-latest
+    name: jenkins-static-image-pipeline-test
+    steps:
+      # Run in the on demand VM. GitHub Action helps to map the workspace into the following container.
+      - uses: actions/checkout@v2
+      # Run in the Jenkins container which presents inside the on demand VM.
+      - name: Jenkins pipeline with the static image
+        id: jenkins_pipeline_image
+        uses:
+          ./jfr-static-image-action
+        with:
+          command: run
+          jenkinsfile: Jenkinsfile
+          pluginstxt: plugins_container.txt
+          jcasc: jcasc.yml
+          initHook: groovy.init.d      
+      - name: Upload pipeline Artifacts
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: jenkins-static-image-pipeline-log
+          path: jenkinsHome/jobs/job/builds
+  jenkins-static-image-pipeline-with-base-image:
+    needs: syntax-check
+    runs-on: ubuntu-latest
+    name: jenkins-static-image-pipeline-with-base-image
+    strategy:
+      matrix:
+        baseImages: ['nginx:latest', 'node:18.3.0', 'node:18-alpine', 'python:3.8-alpine3.16']
+    steps:
+      # Run in the on demand VM. GitHub Action helps to map the workspace into the following container.
+      - uses: actions/checkout@v2
+      # Run in the Jenkins container which presents inside the on demand VM.
+      - name: Jenkins pipeline with the static image
+        id: jenkins_pipeline_base_image
+        uses:
+          ./jfr-static-image-action
+        env:
+          JENKINS_AWS_KEY: 123456
+        with:
+          command: run
+          jenkinsfile: Jenkinsfile
+          pluginstxt: plugins_container.txt
+          jcasc: jcasc.yml
+          baseImage: ${{ matrix.baseImages }}
+          initHook: groovy.init.d     
+      - name: Upload pipeline Artifacts
+        if: ${{ github.ref == 'refs/heads/master' }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: jenkins-static-image-pipeline-log
+          path: jenkinsHome/jobs/job/builds
